@@ -1,5 +1,4 @@
-FROM phusion/baseimage:0.9.16
-MAINTAINER mnbf9rca mnbf9rca@gmx.com
+FROM debian
 
 ## cloned from gfjardim  / https://github.com/gfjardim/docker-containers / <gfjardim@gmail.com>
 
@@ -7,12 +6,7 @@ MAINTAINER mnbf9rca mnbf9rca@gmx.com
 ##        ENVIRONMENTAL CONFIG         ##
 #########################################
 # Set correct environment variables
-ENV HOME="/root" LC_ALL="C.UTF-8" LANG="en_US.UTF-8" LANGUAGE="en_US.UTF-8" GIT_REPO="mnbf9rca/cups-google-print" DEBIAN_FRONTEND="noninteractive" TERM="xterm"
-
-# Use baseimage-docker's init system
-CMD ["/sbin/my_init"]
-
-
+ENV HOME="/root" LC_ALL="C.UTF-8" LANG="en_US.UTF-8" LANGUAGE="en_US.UTF-8" DEBIAN_FRONTEND="noninteractive" TERM="xterm"
 
 
 #########################################
@@ -23,21 +17,8 @@ RUN usermod -u 99 nobody \
 && usermod -g 100 nobody \
 && usermod -d /home nobody \
 && chown -R nobody:users /home \
+&& mkdir /etc/runit \
 && rm -rf /etc/service/sshd /etc/service/cron /etc/service/syslog-ng /etc/my_init.d/00_regen_ssh_host_keys.sh
-
-##  <<- removing Samsung printers
-## # Repositories
-## 
-## RUN curl -sSkL -o /tmp/suldr-keyring_1_all.deb http://www.bchemnet.com/suldr/pool/debian/extra/su/suldr-keyring_1_all.deb \
-## && dpkg -i /tmp/suldr-keyring_1_all.deb \
-## && add-apt-repository "deb http://www.bchemnet.com/suldr/ debian extra" \
-## && add-apt-repository ppa:ubuntu-lxc/lxd-stable \
-## && sed -i -e "s#http://[^\s]*archive.ubuntu[^\s]* #mirror://mirrors.ubuntu.com/mirrors.txt #g" /etc/apt/sources.list
-
-RUN add-apt-repository ppa:ubuntu-lxc/lxd-stable 
-## <-- removing modification of sources host
-## \
-## && sed -i -e "s#http://[^\s]*archive.ubuntu[^\s]* #mirror://mirrors.ubuntu.com/mirrors.txt #g" /etc/apt/sources.list
 
 
 # Install Dependencies
@@ -45,6 +26,8 @@ RUN add-apt-repository ppa:ubuntu-lxc/lxd-stable
 RUN apt-get update -qq \
 && apt-get install -qy --force-yes \
  cups \
+ runit \
+ curl \
  cups-pdf \
  whois \
  hplip \
@@ -79,7 +62,8 @@ ENV GOPATH=$HOME/go PATH=$PATH:$GOPATH/bin:/usr/local/go/bin
 RUN go get github.com/google/cloud-print-connector/...
 
 
-ADD * /tmp/
+COPY * /tmp/
+COPY runit_bootstrap.sh /usr/sbin/runit_bootstrap.sh
 RUN chmod +x /tmp/*.sh \
 && /tmp/install.sh \
 && /tmp/make-avahi-autostart.sh \
@@ -98,3 +82,5 @@ RUN mkdir -p /var/run/dbus \
 # Export volumes
 VOLUME /config /etc/cups/ /var/log/cups /var/spool/cups /var/cache/cups /var/run/dbus
 EXPOSE 631
+
+CMD ["/usr/sbin/runit_bootstrap.sh"]

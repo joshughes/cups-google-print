@@ -1,5 +1,9 @@
 #!/bin/bash
 
+cp -rf /usr/share/doc/runit/debian/* /etc/runit/
+
+mkdir /service
+ln -s /etc/sv/getty-5/ /service/getty-5
 
 # Add AirPrint config tool
 curl -skL https://raw.github.com/tjfontaine/airprint-generate/master/airprint-generate.py /opt/airprint-generate.py -o /opt/airprint-generate.py
@@ -28,7 +32,7 @@ mkdir -p /config/cups /config/spool /config/logs /config/cache /config/cups/ssl 
 
 # Copy missing config files
 cd /etc/cups
-for f in *.conf ; do 
+for f in *.conf ; do
   if [ ! -f "/config/cups/${f}" ]; then
     cp ./${f} /config/cups/
   fi
@@ -38,7 +42,7 @@ EOT
 chmod +x /etc/my_init.d/config.sh
 
 # Add cups to runit
-mkdir /etc/service/cups
+mkdir -p /etc/service/cups
 cat <<'EOT' >/etc/service/cups/run
 #!/bin/sh
 if [ -n "$CUPS_USER_ADMIN" ]; then
@@ -53,7 +57,7 @@ chmod +x /etc/service/cups/run
 
 
 # Add AirPrint to runit
-mkdir /etc/service/air_print
+mkdir -p /etc/service/air_print
 cat <<'EOT' > /etc/service/air_print/run
 #!/bin/bash
 
